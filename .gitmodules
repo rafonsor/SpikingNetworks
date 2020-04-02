@@ -1,0 +1,12 @@
+[submodule "boost"]
+	path = dependencies/boost
+	url = https://github.com/boostorg/boost
+	branch = boost-1.72.0
+[submodule "eigen"]
+	path = dependencies/eigen
+	url = https://gitlab.com/libeigen/eigen
+	branch = 3.3
+[submodule "opencv"]
+	path = dependencies/opencv
+	url = https://github.com/opencv/opencv
+	branch = 4.2.0
