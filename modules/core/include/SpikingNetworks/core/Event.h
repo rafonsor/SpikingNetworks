@@ -4,6 +4,8 @@
 #include <memory>
 #include <set>
 
+#include <SpikingNetworks/core/Concepts.h>
+#include <SpikingNetworks/core/Id.h>
 #include <SpikingNetworks/core/Time.h>
 
 
@@ -17,38 +19,58 @@ namespace SpikingNetworks::core
 
 	struct SpikeEvent : Event
 	{
-		float potential = 0;
+		UUID origin;
+		float current = 0;
 	};
 
 	using EventPtr = std::shared_ptr<Event>;
 	using SpikeEventPtr = std::shared_ptr<SpikeEvent>;
 
-	bool comp(Event& a, Event& b);
-	bool equiv(Event& a, Event& b);
-
-	SpikeEvent operator+(const SpikeEvent& a, const SpikeEvent& b);
+	template <class EventType>
+	using EventQueue = std::multiset<EventType>;
 
 	template <typename EventType, typename... EventArgs>
-	std::shared_ptr<EventType> EventFactory(EventArgs... arguments)
+	std::shared_ptr<EventType> EventPtrFactory(EventArgs... arguments)
 	{
 		return std::make_shared<EventType>(get_simulation_time(), arguments...);
 	}
 
 	template <typename EventType>
-	std::shared_ptr<EventType> EventFactory()
+	std::shared_ptr<EventType> EventPtrFactory()
 	{
 		return std::make_shared<EventType>(get_simulation_time());
 	}
 
-	template <class EventType>
-	using EventQueue = std::multiset<EventType>;
-}
+	template <typename EventType, typename... EventArgs>
+	EventType EventFactory(EventArgs... arguments)
+	{
+		return EventType{ get_simulation_time(), arguments... };
+	}
 
-bool operator<(const SpikingNetworks::core::Event& a, const SpikingNetworks::core::Event& b) noexcept;
+	template <typename EventType>
+	EventType EventFactory()
+	{
+		return EventType{ get_simulation_time() };
+	}
 
-SpikingNetworks::core::SpikeEvent operator+(const SpikingNetworks::core::SpikeEvent& a, const SpikingNetworks::core::SpikeEvent& b) noexcept;
+	SpikeEvent make_spike(UUID origin, float current);
 
-constexpr bool std::less<SpikingNetworks::core::SpikeEvent>::operator()(const SpikingNetworks::core::SpikeEvent& a, const SpikingNetworks::core::SpikeEvent& b) const
-{
-	return a.time < b.time;
+	constexpr bool operator<(const Event& a, const Event& b) noexcept
+	{
+		return a.time < b.time;
+	}
+
+	constexpr bool operator<(const SpikeEvent& a, const SpikeEvent& b) noexcept
+	{
+		return a.time < b.time && a.current < b.current;
+	}
+
+	SpikeEvent operator+(const SpikeEvent& a, const SpikeEvent& b) noexcept;
+
+
+	namespace concepts
+	{
+		template <typename EventType>
+		concept IsEvent = _IsDerived<SpikingNetworks::core::Event, EventType>;
+	}
 }

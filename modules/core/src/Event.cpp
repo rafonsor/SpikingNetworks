@@ -8,29 +8,14 @@
 namespace SpikingNetworks::core
 {
 
-	bool comp(Event& a, Event& b)
+	SpikeEvent make_spike(UUID origin, float current)
 	{
-		return a.time <= b.time;
+		return EventFactory<SpikeEvent>(origin, current);
 	}
 
-	bool equiv(Event& a, Event& b)
+	SpikeEvent operator+(const SpikeEvent& a, const SpikeEvent& b) noexcept
 	{
-		return a.time == b.time;
+		return SpikeEvent{ std::max(a.time, b.time), a.origin, a.current + b.current };
 	}
 
-}
-
-bool operator<(const SpikingNetworks::core::Event& a, const SpikingNetworks::core::Event& b) noexcept
-{
-	return a.time < b.time;
-}
-
-SpikingNetworks::core::SpikeEvent operator+(const SpikingNetworks::core::SpikeEvent& a, const SpikingNetworks::core::SpikeEvent& b) noexcept
-{
-	return { std::max(a.time, b.time), a.potential + b.potential };
-}
-
-bool operator<(const SpikingNetworks::core::SpikeEvent& a, const SpikingNetworks::core::SpikeEvent& b) noexcept
-{
-	return a.time < b.time;
 }
