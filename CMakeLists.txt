@@ -29,9 +29,9 @@ include("helpers")
 SET_PROJECT_VERSION()
 
 # Dependencies
-find_package(Boost REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(Boost 1.72 REQUIRED)
+find_package(Eigen3 3.3 REQUIRED)
+find_package(OpenCV 4.2 REQUIRED)
 
 # Include sub-projects.
 add_subdirectory("modules")
