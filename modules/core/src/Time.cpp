@@ -22,4 +22,19 @@ namespace SpikingNetworks::core
 		return (unsigned long) (std::chrono::time_point<std::chrono::milliseconds>() - _SIMULATION_START_POINT).count();
 	}
 
+	void set_time_delta(double delta)
+	{
+		_SIMULATION_TIME_DELTA = delta;
+	}
+
+	const double get_time_delta()
+	{
+		return _SIMULATION_TIME_DELTA;
+	}
+
+	const double* get_time_delta_pointer()
+	{
+		return &_SIMULATION_TIME_DELTA;
+	}
+
 }
