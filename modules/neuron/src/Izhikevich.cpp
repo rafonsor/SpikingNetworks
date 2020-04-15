@@ -12,7 +12,7 @@ namespace SpikingNetworks::neuron
 	void Izhikevich::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input
-		float input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
+		double input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
 
 		std::unique_lock lck(_mutex);
 
@@ -31,16 +31,16 @@ namespace SpikingNetworks::neuron
 	{
 		/* Izhikevich Neuron:
 		 - v: dv/dt = 0.04v² + 5v + 140 - u + I
-		 - u: du/dt = a(bu - v)
+		 - u: du/dt = a(bv - u)
 		*/
 		double v = _v;
 		double u = _u;
 
-		_u += (*_delta) * _a * (_b * u - v);
-		return (*_delta) * (0.04*v**2(_leaky ? (_resting_v - _v) / _tau : 0) + input / _capacitance);
+		_u += (*_delta) * _a * (_b * v - u);
+		return (*_delta) * ((0.04 * std::pow(v, 2)) + (5 * v) + 140 - u + input);
 	}
 
-	void Izhikevich::fire(float current)
+	void Izhikevich::fire(double current)
 	{
 		SpikingNetworks::core::SpikeEvent spike = SpikingNetworks::core::make_spike(id(), current);
 		broadcast(spike);

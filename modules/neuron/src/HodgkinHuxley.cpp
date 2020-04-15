@@ -12,16 +12,16 @@ namespace SpikingNetworks::neuron
 	void HodgkinHuxley::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input
-		float input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
+		double input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
 
 		std::unique_lock lck(_mutex);
 
 		_v += compute(input);
-		if (_v >= _threshold)
 		{
 			_v = _reset_to_equilibrium ? _equilibrium_v : _v - _threshold;
 			lck.unlock();
 			SpikingNetworks::core::CellBody::fire();
+
 		}
 	}
 
@@ -59,7 +59,7 @@ namespace SpikingNetworks::neuron
 		return (*_delta) * (input - i_k - i_na - i_leak) / _capacitance;
 	}
 
-	void HodgkinHuxley::fire(float current)
+	void HodgkinHuxley::fire(double current)
 	{
 		SpikingNetworks::core::SpikeEvent spike = SpikingNetworks::core::make_spike(id(), current);
 		broadcast(spike);

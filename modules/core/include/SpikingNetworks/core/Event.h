@@ -20,7 +20,8 @@ namespace SpikingNetworks::core
 	struct SpikeEvent : Event
 	{
 		UUID origin;
-		float current = 0;
+		double current = 0;
+		unsigned long delay = 0;
 	};
 
 	using EventPtr = std::shared_ptr<Event>;
@@ -53,7 +54,7 @@ namespace SpikingNetworks::core
 		return EventType{ get_simulation_time() };
 	}
 
-	SpikeEvent make_spike(UUID origin, float current);
+	SpikeEvent make_spike(UUID origin, double current, unsigned long delay = 0);
 
 	constexpr bool operator<(const Event& a, const Event& b) noexcept
 	{
@@ -62,7 +63,7 @@ namespace SpikingNetworks::core
 
 	constexpr bool operator<(const SpikeEvent& a, const SpikeEvent& b) noexcept
 	{
-		return a.time < b.time && a.current < b.current;
+		return (a.time + a.delay) < (b.time + b.delay) && a.current < b.current;
 	}
 
 	SpikeEvent operator+(const SpikeEvent& a, const SpikeEvent& b) noexcept;

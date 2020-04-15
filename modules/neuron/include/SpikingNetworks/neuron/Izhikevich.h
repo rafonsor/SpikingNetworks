@@ -39,7 +39,7 @@ namespace SpikingNetworks::neuron
 		{}
 
 		void integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes);
-		void fire(float current);
+		void fire(double current);
 
 	protected:
 		double compute(double current);
@@ -56,7 +56,6 @@ namespace SpikingNetworks::neuron
 		double _b;
 		double _c;
 		double _d;
-
 
 	};
 

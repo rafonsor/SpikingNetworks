@@ -65,7 +65,7 @@ namespace SpikingNetworks::core
 		// TODO: Still uncertain what the best approach would be: assume the conductance information to be available at the pre-synaptic cell and thus send current,
 		// or that it's up to the post-synaptic cell to convert the pre-synaptic cell's potential into current. Of course, transmitting current will be simpler to
 		// propagate across segments and connections.
-		void virtual fire(float current) = 0;
+		void virtual fire(double current) = 0;
 		void virtual fire();
 
 		void stop();

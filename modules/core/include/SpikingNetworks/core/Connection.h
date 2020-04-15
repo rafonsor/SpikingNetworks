@@ -37,6 +37,7 @@ namespace SpikingNetworks::core
 
 	class DirectedConnection2 : public virtual Connection2
 	{
+	protected:
 		DirectedConnection2(CellPart::Ptr segment_one, CellPart::Ptr segment_two, float weight) : Connection2(segment_one, segment_two, weight)
 		{
 			segment_one->add_connection(shared_from_this(), weight);
@@ -45,6 +46,7 @@ namespace SpikingNetworks::core
 
 	class UndirectedConnection2 : public virtual Connection2
 	{
+	protected:
 		UndirectedConnection2(CellPart::Ptr segment_one, CellPart::Ptr segment_two, float weight) : Connection2(segment_one, segment_two, weight)
 		{
 			segment_one->add_connection(shared_from_this(), weight);

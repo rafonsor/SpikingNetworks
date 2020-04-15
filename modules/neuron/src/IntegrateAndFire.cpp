@@ -12,7 +12,7 @@ namespace SpikingNetworks::neuron
 	void IntegrateAndFire::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input
-		float input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
+		double input = std::reduce(std::execution::par, spikes.begin(), spikes.end()).current;
 
 		std::unique_lock lck(_mutex);
 
@@ -32,7 +32,7 @@ namespace SpikingNetworks::neuron
 		return (*_delta) * ( (_leaky? (_resting_v - _v) / _tau : 0) + input / _capacitance);
 	}
 
-	void IntegrateAndFire::fire(float current)
+	void IntegrateAndFire::fire(double current)
 	{
 		SpikingNetworks::core::SpikeEvent spike = SpikingNetworks::core::make_spike(id(), current);
 		broadcast(spike);
