@@ -7,5 +7,5 @@ namespace SpikingNetworks::exception
 
 	SN_EXCEPTION(CellError)
 	SN_EXCEPTION(SegmentError)
-	
+	SN_EXCEPTION(InvalidParameter)
 }
