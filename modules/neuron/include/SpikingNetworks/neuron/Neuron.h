@@ -8,15 +8,14 @@
 #include <SpikingNetworks/core/Exceptions.h>
 #include <SpikingNetworks/core/Event.h>
 #include <SpikingNetworks/core/Macros.h>
-#include <iostream>
 
 
 namespace SpikingNetworks::neuron
 {
 	class Neurite : virtual public SpikingNetworks::core::CellPart
 	{
-	public:
-		SN_CLASS_POINTERS(Neurite)
+	SN_CLASS_POINTERS(Neurite)
+	SN_CLASS_CLONE_ABSTRACT(Neurite)
 
 	protected:
 		Neurite() : SpikingNetworks::core::CellPart()
@@ -25,21 +24,23 @@ namespace SpikingNetworks::neuron
 
 	class Dendrite : virtual public Neurite
 	{
-	public:
-		SN_CLASS_POINTERS(Dendrite)
+	SN_CLASS_POINTERS(Dendrite)
+	SN_CLASS_CLONE(Dendrite)
 
+	public:
 		Dendrite() : Neurite()
 		{}
 
 	protected:
-		void virtual _propagate(SpikingNetworks::core::SpikeEvent & spike) {}
+		void virtual _propagate(SpikingNetworks::core::SpikeEvent& spike) {}
 	};
 
 	class Axon : virtual public Neurite
 	{
-	public:
-		SN_CLASS_POINTERS(Axon)
+	SN_CLASS_POINTERS(Axon)
+	SN_CLASS_CLONE(Axon)
 
+	public:
 		Axon() : Neurite()
 		{}
 
@@ -49,40 +50,17 @@ namespace SpikingNetworks::neuron
 
 	class Spine : virtual public Neurite
 	{
-	public:
-		SN_CLASS_POINTERS(Spine)
+	SN_CLASS_POINTERS(Spine)
 	};
 
-
-
-	class Neuron : virtual public SpikingNetworks::core::Cell
+	class Soma : virtual public SpikingNetworks::core::CellBody
 	{
+	SN_CLASS_POINTERS(Soma)
+	SN_CLASS_CLONE_ABSTRACT(Soma)
+
 	public:
-		SN_CLASS_POINTERS(Neuron)
-
-			Neuron() : SpikingNetworks::core::Cell(), _dendrites(), _axons() { std::cout << "I am being constructed" << std::endl; }
-
-		Neuron(Neuron&& other) noexcept
-		{
-			this->_body = std::move(other._body);
-			this->_dendrites = other._dendrites;
-			this->_axons = other._axons;
-		}
-
-		//Neuron::Unique clone()
-		//{
-		//	auto other = SpikingNetworks::core::Cell::clone<Neuron>();
-		//	/*for (auto segment : _dendrites)
-		//	{
-		//		auto clone = segment->clone<std::remove_pointer<decltype(segment)>::type>();
-		//		auto id = clone->id();
-		//		other->get_body()->add_segment(std::move(clone));
-		//		other->add_dendrite(other->get_body()->get_segment(id));
-		//	}
-		//	for (auto segment : _axons)
-		//		other->add_axon(segment->clone<std::remove_pointer<decltype(segment)>::type>().get());*/
-		//	return other;
-		//}
+		Soma() : SpikingNetworks::core::CellBody(), _dendrites(), _axons()
+		{}
 
 		void add_axon(Axon::Ptr axon)
 		{
@@ -93,56 +71,57 @@ namespace SpikingNetworks::neuron
 			_dendrites.push_back(dendrite);
 		}
 
-	private:
-		std::vector<SpikingNetworks::core::CellPart::Ptr> _dendrites;
-		std::vector<SpikingNetworks::core::CellPart::Ptr> _axons;
-	};
-	using NeuronPtr = std::unique_ptr<Neuron>;
-
-	template <typename SomaType, typename ... SomaArgs>
-	NeuronPtr NeuronFactory(SomaArgs... args)
-	{
-		NeuronPtr neuron = std::make_unique<Neuron>();
-		neuron->set_body(std::make_unique<SomaType>(std::forward<SomaArgs>(args)...));
-		return std::move(neuron);
-	}
-
-	class Soma : virtual public SpikingNetworks::core::CellBody
-	{
-	public:
-		SN_CLASS_POINTERS(Neuron)
-
-		Soma() : SpikingNetworks::core::CellBody()
-		{}
-
 	protected:
 		// Return Spike Event untouched
 		void virtual _propagate(SpikingNetworks::core::SpikeEvent&) {}
+
+	private:
+		std::vector<SpikingNetworks::neuron::Dendrite::Ptr> _dendrites;
+		std::vector<SpikingNetworks::neuron::Axon::Ptr> _axons;
 	};
+
+
+	// What about excitation/inhibition?
+	class Neuron : virtual public SpikingNetworks::core::Cell
+	{
+	SN_CLASS_POINTERS(Neuron)
+
+	public:
+		Neuron() : SpikingNetworks::core::Cell()
+		{}
+
+		Neuron(Neuron&& other) noexcept;
+
+		SpikingNetworks::core::Cell::Unique clone();
+	};
+	using NeuronPtr = std::unique_ptr<Neuron>;
 
 
 	class ProgenitorNeuron
 	{
 	public:
-		ProgenitorNeuron() : _current(nullptr), _neurons() {}
+		ProgenitorNeuron() : _current(nullptr), _parent_neurite(nullptr), _current_neurite(nullptr), _neurons(), _connection_segments()
+		{}
 
-		ProgenitorNeuron& make_neuron()
-		{
-			auto neuron = std::make_unique<Neuron>();
-			_current = neuron.get();
-			_neurons.push_back(std::move(neuron));
-			_parent_neurite = nullptr;
-			_current_neurite = nullptr;
-			return *this;
-		}
+		ProgenitorNeuron& make_neuron();
 
 		template <typename Model> requires std::is_base_of_v<SpikingNetworks::core::CellBody, Model>
 		ProgenitorNeuron& soma()
 		{
 			if (_current == nullptr)
 				make_neuron();
-			auto soma = std::make_unique<Model>();
-			_current->set_body(std::move(soma));
+			_current->set_body(std::make_unique<Model>());
+			_current_neurite = _current->get_body();
+			return *this;
+		}
+
+		template <typename Model, typename ModelProperties> requires std::is_base_of_v<SpikingNetworks::core::CellBody, Model> && std::is_base_of_v<SpikingNetworks::core::ObjectProperties, ModelProperties>
+		ProgenitorNeuron& soma(ModelProperties properties)
+		{
+			if (_current == nullptr)
+				make_neuron();
+			_current->set_body(std::make_unique<Model>(properties));
+			_current_neurite = _current->get_body();
 			return *this;
 		}
 
@@ -154,13 +133,14 @@ namespace SpikingNetworks::neuron
 			if (_current->get_body() == nullptr)
 				throw SpikingNetworks::exception::SegmentError("Neuron without a soma, add a cell body first.");
 
+			Soma::Ptr body = dynamic_cast<Soma::Ptr>(_current->get_body());
 			auto neurite = std::make_unique<Model>();
 			auto id = neurite->id();
-			_current->get_body()->add_segment(std::move(neurite));
-			auto ptr = dynamic_cast<typename Model::Ptr>(_current->get_body()->get_segment(id));
-			_current->add_axon(ptr);
+			_current->add_segment(std::move(neurite), body->id());
+			auto ptr = dynamic_cast<typename Model::Ptr>(_current->get_segment(id));
+			body->add_axon(ptr);
 
-			_parent_neurite = nullptr;
+			_parent_neurite = _current_neurite;
 			_current_neurite = ptr;
 			return *this;
 		}
@@ -173,13 +153,14 @@ namespace SpikingNetworks::neuron
 			if (_current->get_body() == nullptr)
 				throw SpikingNetworks::exception::SegmentError("Neuron without a soma, add a cell body first.");
 
+			Soma::Ptr body = dynamic_cast<Soma::Ptr>(_current->get_body());
 			auto neurite = std::make_unique<Model>();
 			auto id = neurite->id();
-			_current->get_body()->add_segment(std::move(neurite));
-			auto ptr = dynamic_cast<typename Model::Ptr>(_current->get_body()->get_segment(id));
-			_current->add_dendrite(ptr);
+			_current->add_segment(std::move(neurite), body->id());
+			auto ptr = dynamic_cast<typename Model::Ptr>(_current->get_segment(id));
+			body->add_dendrite(ptr);
 
-			_parent_neurite = nullptr;
+			_parent_neurite = _current_neurite;
 			_current_neurite = ptr;
 			return *this;
 		}
@@ -192,37 +173,68 @@ namespace SpikingNetworks::neuron
 
 			auto neurite = std::make_unique<Model>();
 			auto id = neurite->id();
-			_current_neurite->add_segment(std::move(neurite));
+			_current->add_segment(std::move(neurite), _current_neurite->id());
 
 			_parent_neurite = _current_neurite;
-			_current_neurite = dynamic_cast<typename Model::Ptr>(_current_neurite->get_segment(id));
+			_current_neurite = dynamic_cast<typename Model::Ptr>(_current->get_segment(id));
 			return *this;
 		}
 
-		ProgenitorNeuron& done()
+		ProgenitorNeuron& set_connection_point();
+
+		template <typename ConnectionT> requires std::is_base_of_v<SpikingNetworks::core::ConnectionBase, ConnectionT>
+		ProgenitorNeuron& create_connection2(float weight = 1.0)
 		{
-			if (_parent_neurite != nullptr)
-			{
-				_current_neurite = _parent_neurite;
-				_parent_neurite = _current_neurite->get_parent();
-			}
-			else
-				_current_neurite = nullptr;
+			if (_connection_segments.size() != 2)
+				throw SpikingNetworks::exception::SegmentError("Cannot instantiate connection, wrong number of segments provided (" + std::to_string(_connection_segments.size()) + "): expected 2.");
+
+			std::shared_ptr<ConnectionT> connection;
+			connection = std::make_shared<ConnectionT>(_connection_segments[0].first, _connection_segments[1].first, weight);
+			for (auto segment : _connection_segments)
+				segment.second->add_connection(connection, segment.first->id());
+			_connection_segments.clear();
 			return *this;
 		}
 
-		std::vector<Neuron::Unique> all()
+		template <typename ConnectionT> requires std::is_base_of_v<SpikingNetworks::core::ConnectionBase, ConnectionT>
+		ProgenitorNeuron& create_connection3(float weight = 1.0)
 		{
-			_current = nullptr;
-			return std::move(_neurons);
+			if (_connection_segments.size() != 3)
+				throw SpikingNetworks::exception::SegmentError("Cannot instantiate connection, wrong number of segments provided (" + std::to_string(_connection_segments.size()) + "): expected 3.");
+
+			std::shared_ptr<ConnectionT> connection;
+			connection = std::make_shared<ConnectionT>(_connection_segments[0].first, _connection_segments[1].first, _connection_segments[2].first,  weight);
+			for (auto segment : _connection_segments)
+				segment.second->add_connection(connection, segment.first->id());
+			_connection_segments.clear();
+			return *this;
 		}
+
+		template <typename ConnectionT> requires std::is_base_of_v<SpikingNetworks::core::ConnectionBase, ConnectionT>
+		ProgenitorNeuron& create_connection4(float weight = 1.0)
+		{
+			if (_connection_segments.size() != 4)
+				throw SpikingNetworks::exception::SegmentError("Cannot instantiate connection, wrong number of segments provided (" + std::to_string(_connection_segments.size()) + "): expected 4.");
+
+			std::shared_ptr<ConnectionT> connection;
+			connection = std::make_shared<ConnectionT>(_connection_segments[0].first, _connection_segments[1].first, _connection_segments[2].first, _connection_segments[3].first,  weight);
+			for (auto segment : _connection_segments)
+				segment.second->add_connection(connection, segment.first->id());
+			_connection_segments.clear();
+			return *this;
+		}
+
+		ProgenitorNeuron& done();
+
+		std::vector<Neuron::Unique> all();
 
 
 	private:
 		Neuron::Ptr _current;
+		std::vector<Neuron::Unique> _neurons;
 		SpikingNetworks::core::CellPart::Ptr _parent_neurite;
 		SpikingNetworks::core::CellPart::Ptr _current_neurite;
-		std::vector<Neuron::Unique> _neurons;
+		std::vector<std::pair<SpikingNetworks::core::CellPart::Ptr, Neuron::Ptr>> _connection_segments;
 	};
 
 	/*
