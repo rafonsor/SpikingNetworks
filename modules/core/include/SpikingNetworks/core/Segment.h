@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 
@@ -18,6 +19,14 @@ namespace SpikingNetworks::core
 		Segment() : _mutex(), _total_weight(0), _parent(nullptr), _segments(), _connections()
 		{}
 
+		Segment(const Segment& other) : _mutex()
+		{
+			_parent = other._parent;
+			_total_weight = other._total_weight;
+			_segments = other._segments;
+			_connections = other._connections;
+		}
+
 		~Segment()
 		{}
 
@@ -31,12 +40,12 @@ namespace SpikingNetworks::core
 			return _parent;
 		}
 
-		bool add_segment(std::unique_ptr<SegmentT>&& segment, float weight = 1.0f)
+		bool add_segment(SegmentT* segment, float weight = 1.0f)
 		{
 			std::scoped_lock lck(_mutex);
 			if (_segments.find(segment->id()) != _segments.end())
 				return false;
-			_segments.insert({ segment->id() , std::pair{ std::move(segment), weight } });
+			_segments.insert({ segment->id() , std::pair{ segment, weight } });
 			return true;
 		}
 
@@ -82,7 +91,7 @@ namespace SpikingNetworks::core
 			return true;
 		}
 
-		bool add_connection(ConnectionBase::Shared connection, float weight)
+		bool add_connection(ConnectionBase::Ptr connection, float weight = 1.0f)
 		{
 			std::scoped_lock lck(_mutex);
 			if (_connections.find(connection->id()) != _connections.end())
@@ -106,6 +115,7 @@ namespace SpikingNetworks::core
 
 		float get_connection_weight(UUID connection) const
 		{
+			std::scoped_lock lck(_mutex);
 			auto it = _connections.find(connection);
 			return it != _connections.end() ? it->second.second : 0.0f;
 		}
@@ -148,25 +158,27 @@ namespace SpikingNetworks::core
 			return _connections.size();
 		}
 
+		const std::unordered_map<UUID, std::pair<SegmentT*, float>>& segments() const
+		{
+			return _segments;
+		}
+
+		void set_segments(const std::unordered_map<UUID, std::pair<SegmentT*, float>>& segments)
+		{
+			_segments = segments;
+		}
+
+		const std::unordered_map<UUID, std::pair<ConnectionBase::Ptr, float>>& connections() const
+		{
+			return _connections;
+		}
+
 	protected:
 		std::mutex _mutex;
 		float _total_weight;
 		SegmentT* _parent;
-
-		/*
-		On the question of which kind of pointer and ownership a segment should have on other segments...
-		Well it seems logical that ownership should extend outwards from the soma, in which case, by storing segments as unique_ptr,
-		deleting a soma should propagate the destruction of all other segments in a manner that makes sense, whereas connection would be share_ptr.
-		This is conditioned on the current approach where neurons only have direct ownership of their soma and pointers to beginning of neurites (and all connections?)
-
-		... OK main issue with this is then we only have a path outwards, meaning input segments cannot properly propagate spikes inwards....
-		so we could have two sets of segments or maybe a ptr to parent?
-		then we have to override broadcast behaviour so that e.g. dendritic propagates through parent while axon normally to segments and spine only to connections.
-
-		i don't think the parent route will be a problem for Segments because there should only be bifurcations and no circular links (for connections yes)
-		*/
-		std::unordered_map<UUID, std::pair<std::unique_ptr<SegmentT>, float>> _segments;
-		std::unordered_map<UUID, std::pair<ConnectionBase::Shared, float>> _connections;
+		std::unordered_map<UUID, std::pair<SegmentT*, float>> _segments;
+		std::unordered_map<UUID, std::pair<ConnectionBase::Ptr, float>> _connections;
 	};
 
 }
