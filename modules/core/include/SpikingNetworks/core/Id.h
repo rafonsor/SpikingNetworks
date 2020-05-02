@@ -12,6 +12,13 @@ namespace SpikingNetworks::core
 	public:
 		UUID() : boost::uuids::uuid(boost::uuids::random_generator()())
 		{}
+
+		static UUID null();
+		bool is_null();
+
+	private:
+		UUID(boost::uuids::uuid& uuid) : uuid(uuid)
+		{}
 	};
 
 
