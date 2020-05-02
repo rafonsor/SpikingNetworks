@@ -4,31 +4,45 @@
 #include <vector>
 
 #include <SpikingNetworks/core/Connection.h>
-#include <SpikingNetworks/core/Exceptions.h>
 #include <SpikingNetworks/core/Event.h>
+#include <SpikingNetworks/core/Exceptions.h>
+#include <SpikingNetworks/core/Macros.h>
+#include <SpikingNetworks/core/ObjectProperties.h>
 #include <SpikingNetworks/core/Time.h>
 #include <SpikingNetworks/neuron/Neuron.h>
 
 
 namespace SpikingNetworks::neuron
 {
+	class QuadraticIntegrateAndFireProperties : public SpikingNetworks::core::ObjectProperties
+	{
+	public:
+		QuadraticIntegrateAndFireProperties(const std::string& yaml = "") : SpikingNetworks::core::ObjectProperties(yaml)
+		{
+			defineOptionalProperty<double>("tau", 1.0, "Temporal decay rate");
+			defineOptionalProperty<double>("threshold_i", 0.0, "Input threshold");
+			defineOptionalProperty<double>("threshold_x", 0.0, "State variable threshold");
+			defineOptionalProperty<double>("reset_x", 0.0, "State variable reset value");
+		}
+	};
+
 	/*
 	Implementation of the Quadratic Integrate-and-Fire model as proposed by Hansel and Mato (2001), DOI: 10.1103/PhysRevLett.86.4175.
 	*/
 	class QuadraticIntegrateAndFire : virtual public Soma
 	{
-	public:
-		QuadraticIntegrateAndFire()
-			: Soma(), _delta(SpikingNetworks::core::get_time_delta_pointer()), _tau(1.0), _i_threshold(0.0), _x_threshold(0.0), _x_reset(0.0), _x(0.0)
-		{}
+	SN_CLASS_POINTERS(QuadraticIntegrateAndFire)
+	SN_CLASS_CLONE(QuadraticIntegrateAndFire)
 
-		QuadraticIntegrateAndFire(double* delta, double tau, double i_threshold, double x_threshold, double x_reset)
-			: Soma(), _delta(delta), _tau(tau), _i_threshold(i_threshold), _x_threshold(x_threshold), _x_reset(x_reset), _x(x_reset)
-		{}
+	public:
+		QuadraticIntegrateAndFire(const double* delta = SpikingNetworks::core::get_time_delta_pointer(), QuadraticIntegrateAndFireProperties properties = QuadraticIntegrateAndFireProperties());
+
+		void update_properties(QuadraticIntegrateAndFireProperties properties);
+		QuadraticIntegrateAndFireProperties extract_properties();
 
 		void integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes);
 		void fire();
-		void fire(float current);
+		void fire(double current);
 
 	protected:
 		double compute(double current);
@@ -41,22 +55,24 @@ namespace SpikingNetworks::neuron
 		double _x;
 	};
 
+
+	class QuadraticIntegrateAndFireSynapseProperties : public SpikingNetworks::core::ObjectProperties
+	{
+	public:
+		QuadraticIntegrateAndFireSynapseProperties(const std::string& yaml = "") : SpikingNetworks::core::ObjectProperties(yaml)
+		{
+			defineOptionalProperty<double>("tau1", 6.0, "Temporal decay rate 1");
+			defineOptionalProperty<double>("tau2", 3.0, "Temporal decay rate 2");
+		}
+	};
+
 	class QuadraticIntegrateAndFireSynapse : virtual public SpikingNetworks::core::DirectedConnection2
 	{
-		//QuadraticIntegrateAndFireSynapse()
-		//	: SpikingNetworks::core::DirectedConnection2(),
-		//	_tau1(6.0),
-		//	_tau2(3.0)
-		//{}
+	SN_CLASS_POINTERS(QuadraticIntegrateAndFireSynapse)
+	SN_CLASS_CLONE(QuadraticIntegrateAndFireSynapse)
 
-		QuadraticIntegrateAndFireSynapse(SpikingNetworks::core::CellPart::Ptr segment_one, SpikingNetworks::core::CellPart::Ptr segment_two, float weight, double tau1, double tau2)
-			: SpikingNetworks::core::DirectedConnection2(segment_one, segment_two, weight),
-			_tau1(tau1),
-			_tau2(tau2)
-		{
-			if (tau1 == tau2)
-				throw SpikingNetworks::exception::InvalidParameter("decay rates tau1 and tau2 cannot be equal, will cause a division by 0.");
-		}
+	public:
+		QuadraticIntegrateAndFireSynapse(SpikingNetworks::core::CellPart::Ptr segment_one, SpikingNetworks::core::CellPart::Ptr segment_two, float weight = 1.0, QuadraticIntegrateAndFireSynapseProperties properties = QuadraticIntegrateAndFireSynapseProperties());
 
 		void propagate(SpikingNetworks::core::SpikeEvent spike);
 

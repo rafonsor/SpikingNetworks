@@ -25,6 +25,14 @@ namespace SpikingNetworks::core
 			return _node[name].as<ValueT>();
 		}
 
+		template <typename ValueT>
+		void setProperty(std::string name, ValueT value)
+		{
+			if (_properties.find(name) == _properties.end())
+				throw SpikingNetworks::exception::ObjectPropertyUnknown(name);
+			_node[name] = value;
+		}
+
 	protected:
 		template <typename ValueT>
 		void defineRequiredProperty(std::string name, std::string description)

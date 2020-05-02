@@ -1,42 +1,39 @@
 #pragma once
 
-#include <utility>
 #include <vector>
 
 #include <SpikingNetworks/core/Event.h>
+#include <SpikingNetworks/core/Macros.h>
+#include <SpikingNetworks/core/ObjectProperties.h>
 #include <SpikingNetworks/core/Time.h>
 #include <SpikingNetworks/neuron/Neuron.h>
 
 
 namespace SpikingNetworks::neuron
 {
+	class IzhikevichProperties : public SpikingNetworks::core::ObjectProperties
+	{
+	public:
+		IzhikevichProperties(const std::string& yaml = "") : SpikingNetworks::core::ObjectProperties(yaml)
+		{
+			defineOptionalProperty<double>("threshold", 30.0, "Membrane potential threshold");
+			defineOptionalProperty<double>("a", 0.02, "Recovery time scale constant");
+			defineOptionalProperty<double>("a", 0.25, "Recovery sensitivity constant");
+			defineOptionalProperty<double>("c", -60.0, "Membrane potential at rest");
+			defineOptionalProperty<double>("d", 8.0, "Membrane potential recovery constant");
+		}
+	};
 
 	class Izhikevich : virtual public Soma
 	{
-	public:
-		Izhikevich()
-			: Soma(),
-			_delta(SpikingNetworks::core::get_time_delta_pointer()),
-			_threshold(30.0),
-			_v(-65.0),
-			_u(8.0),
-			_a(0.02),
-			_b(0.25),
-			_c(-65.0),
-			_d(8.0)
-		{}
+	SN_CLASS_POINTERS(Izhikevich)
+	SN_CLASS_CLONE(Izhikevich)
 
-		Izhikevich(double* delta, double threshold, double a, double b, double c, double d)
-			: Soma(),
-			_delta(delta),
-			_threshold(threshold),
-			_v(c),
-			_u(d),
-			_a(a),
-			_b(b),
-			_c(c),
-			_d(d)
-		{}
+	public:
+		Izhikevich(const double* delta = SpikingNetworks::core::get_time_delta_pointer(), IzhikevichProperties properties = IzhikevichProperties());
+
+		void update_properties(IzhikevichProperties properties);
+		IzhikevichProperties extract_properties();
 
 		void integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes);
 		void fire(double current);

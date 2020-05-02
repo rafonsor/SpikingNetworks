@@ -9,6 +9,34 @@
 namespace SpikingNetworks::neuron
 {
 
+	Izhikevich::Izhikevich(const double* delta, IzhikevichProperties properties)
+		: Soma(), _delta(delta)
+	{
+		update_properties(properties);
+		_v = _c;
+		_u = _d;
+	}
+
+	void Izhikevich::update_properties(IzhikevichProperties properties)
+	{
+		_threshold = properties.getProperty<double>("threshold");
+		_a = properties.getProperty<double>("a");
+		_b = properties.getProperty<double>("b");
+		_c = properties.getProperty<double>("c");
+		_d = properties.getProperty<double>("d");
+	}
+
+	IzhikevichProperties Izhikevich::extract_properties()
+	{
+		IzhikevichProperties properties;
+		properties.setProperty<double>("threshold", _threshold);
+		properties.setProperty<double>("a", _a);
+		properties.setProperty<double>("b", _b);
+		properties.setProperty<double>("c", _c);
+		properties.setProperty<double>("d", _d);
+		return properties;
+	}
+
 	void Izhikevich::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input

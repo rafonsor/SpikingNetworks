@@ -1,26 +1,40 @@
 #pragma once
 
-#include <utility>
 #include <vector>
 
 #include <SpikingNetworks/core/Event.h>
+#include <SpikingNetworks/core/Macros.h>
+#include <SpikingNetworks/core/ObjectProperties.h>
 #include <SpikingNetworks/core/Time.h>
 #include <SpikingNetworks/neuron/Neuron.h>
 
 
 namespace SpikingNetworks::neuron
 {
+	class IntegrateAndFireProperties : public SpikingNetworks::core::ObjectProperties
+	{
+	public:
+		IntegrateAndFireProperties(const std::string& yaml = "") : SpikingNetworks::core::ObjectProperties(yaml)
+		{
+			defineOptionalProperty<double>("capacitance", 1.0, "Membrane capacitance");
+			defineOptionalProperty<double>("resistance", 1.0, "Channels resistance");
+			defineOptionalProperty<double>("threshold", 0.0, "Membrane potential threshold");
+			defineOptionalProperty<bool>("reset_to_equilibrium", true, "Reset membrane potential to equilibrium value");
+			defineOptionalProperty<double>("equilibrium_v", -60.0, "Membrane potential at rest");
+			defineOptionalProperty<bool>("leaky", true, "Membrane potential leakage");
+		}
+	};
 
 	class IntegrateAndFire : virtual public Soma
 	{
-	public:
-		IntegrateAndFire()
-			: Soma(), _delta(SpikingNetworks::core::get_time_delta_pointer()), _capacitance(1), _resistance(1), _tau(1), _threshold(0), _resting_v(-60), _v(-60), _reset_to_rest(true), _leaky(false)
-		{}
+	SN_CLASS_POINTERS(IntegrateAndFire)
+	SN_CLASS_CLONE(IntegrateAndFire)
 
-		IntegrateAndFire(double* delta, double threshold, double capacitance, double resistance, double resting_v, bool reset_to_rest, bool leaky)
-			: Soma(), _delta(delta), _capacitance(capacitance), _resistance(resistance), _tau(capacitance * resistance), _threshold(threshold), _resting_v(resting_v), _v(resting_v), _reset_to_rest(reset_to_rest)
-		{}
+	public:
+		IntegrateAndFire(const double* delta = SpikingNetworks::core::get_time_delta_pointer(), IntegrateAndFireProperties properties = IntegrateAndFireProperties());
+
+		void update_properties(IntegrateAndFireProperties properties);
+		IntegrateAndFireProperties extract_properties();
 
 		void integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes);
 		void fire(double current);
@@ -33,9 +47,9 @@ namespace SpikingNetworks::neuron
 		double _resistance;
 		double _tau;
 		double _threshold;
-		double _resting_v;
+		double _equilibrium_v;
 		double _v;
-		bool _reset_to_rest;
+		bool _reset_to_equilibrium;
 		bool _leaky;
 	};
 

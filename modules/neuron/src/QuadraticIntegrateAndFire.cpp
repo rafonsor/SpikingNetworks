@@ -10,6 +10,31 @@
 namespace SpikingNetworks::neuron
 {
 
+	QuadraticIntegrateAndFire::QuadraticIntegrateAndFire(const double* delta, QuadraticIntegrateAndFireProperties properties)
+		: Soma(), _delta(delta)
+	{
+		update_properties(properties);
+		_x = _x_reset;
+	}
+
+	void QuadraticIntegrateAndFire::update_properties(QuadraticIntegrateAndFireProperties properties)
+	{
+		_tau = properties.getProperty<double>("tau");
+		_i_threshold = properties.getProperty<double>("i_threshold");
+		_x_threshold = properties.getProperty<double>("x_threshold");
+		_x_reset = properties.getProperty<double>("x_reset");
+	}
+
+	QuadraticIntegrateAndFireProperties QuadraticIntegrateAndFire::extract_properties()
+	{
+		QuadraticIntegrateAndFireProperties properties;
+		properties.setProperty<double>("tau", _tau);
+		properties.setProperty<double>("i_threshold", _i_threshold);
+		properties.setProperty<double>("x_threshold", _x_threshold);
+		properties.setProperty<double>("x_reset", _x_reset);
+		return properties;
+	}
+
 	void QuadraticIntegrateAndFire::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input
@@ -32,7 +57,7 @@ namespace SpikingNetworks::neuron
 		return (*_delta) * (std::pow(_x, 2) - _i_threshold + input) / _tau;
 	}
 
-	void QuadraticIntegrateAndFire::fire(float current)
+	void QuadraticIntegrateAndFire::fire(double current)
 	{
 		SpikingNetworks::core::SpikeEvent spike = SpikingNetworks::core::make_spike(id(), current);
 		broadcast(spike);
@@ -53,6 +78,16 @@ namespace SpikingNetworks::neuron
 			spike.current *= std::exp(spike.delay) / (_tau1 - _tau2);
 
 		_segment_two->propagate(spike);
+	}
+
+	QuadraticIntegrateAndFireSynapse::QuadraticIntegrateAndFireSynapse(SpikingNetworks::core::CellPart::Ptr segment_one, SpikingNetworks::core::CellPart::Ptr segment_two, float weight, QuadraticIntegrateAndFireSynapseProperties properties)
+		: SpikingNetworks::core::DirectedConnection2(segment_one, segment_two, weight)
+	{
+		_tau1 = properties.getProperty<double>("tau1");
+		_tau2 = properties.getProperty<double>("tau2");
+
+		if (_tau1 == _tau2)
+			throw SpikingNetworks::exception::InvalidParameter("decay rates tau1 and tau2 cannot be equal, will cause a division by 0.");
 	}
 
 }

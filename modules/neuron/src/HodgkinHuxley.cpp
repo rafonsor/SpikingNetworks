@@ -9,6 +9,55 @@
 namespace SpikingNetworks::neuron
 {
 
+	HodgkinHuxley::HodgkinHuxley(const double* delta, HodkginHuxleyProperties properties)
+		: Soma(),
+		_delta(delta),
+		_h(0.0),
+		_m(0.0),
+		_n(0.0),
+		_alpha_h(0.0),
+		_alpha_m(0.0),
+		_alpha_n(0.0),
+		_beta_h(0.0),
+		_beta_m(0.0),
+		_beta_n(0.0)
+	{
+		update_properties(properties);
+		_v = _equilibrium_v;
+		_v_k = _equilibrium_k - _equilibrium_v;
+		_v_na = _equilibrium_na - _equilibrium_v;
+		_v_leak = _equilibrium_leak - _equilibrium_v;
+	}
+
+	void HodgkinHuxley::update_properties(HodkginHuxleyProperties properties)
+	{
+		_capacitance = properties.getProperty<double>("capacitance");
+		_threshold = properties.getProperty<double>("threshold");
+		_reset_to_equilibrium = properties.getProperty<bool>("reset_to_equilibrium");
+		_equilibrium_v = properties.getProperty<double>("equilibrium_v");
+		_equilibrium_k = properties.getProperty<double>("equilibrium_k");
+		_equilibrium_na = properties.getProperty<double>("equilibrium_na");
+		_equilibrium_leak = properties.getProperty<double>("equilibrium_leak");
+		_g_k = properties.getProperty<double>("g_k");
+		_g_na = properties.getProperty<double>("g_na");
+		_g_leak = properties.getProperty<double>("g_leak");
+	}
+	HodkginHuxleyProperties HodgkinHuxley::extract_properties()
+	{
+		HodkginHuxleyProperties properties;
+		properties.setProperty<double>("capacitance", _capacitance);
+		properties.setProperty<double>("threshold", _threshold);
+		properties.setProperty<bool>("reset_to_equilibrium", _reset_to_equilibrium);
+		properties.setProperty<double>("equilibrium_v", _equilibrium_v);
+		properties.setProperty<double>("equilibrium_k", _equilibrium_k);
+		properties.setProperty<double>("equilibrium_na", _equilibrium_na);
+		properties.setProperty<double>("equilibrium_leak", _equilibrium_leak);
+		properties.setProperty<double>("conductance_k", _g_k);
+		properties.setProperty<double>("conductance_na", _g_na);
+		properties.setProperty<double>("conductance_leak", _g_leak);
+		return properties;
+	}
+
 	void HodgkinHuxley::integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes)
 	{
 		// Aggregated Pre-Synaptic Input
@@ -17,11 +66,13 @@ namespace SpikingNetworks::neuron
 		std::unique_lock lck(_mutex);
 
 		_v += compute(input);
+		if (_v >= _threshold /*TODO: && not refractory period*/)
 		{
 			_v = _reset_to_equilibrium ? _equilibrium_v : _v - _threshold;
 			lck.unlock();
 			SpikingNetworks::core::CellBody::fire();
 
+			//TODO: enable refractoriness
 		}
 	}
 

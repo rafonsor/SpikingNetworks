@@ -1,75 +1,44 @@
 #pragma once
 
-#include <utility>
 #include <vector>
 
 #include <SpikingNetworks/core/Event.h>
+#include <SpikingNetworks/core/Macros.h>
+#include <SpikingNetworks/core/ObjectProperties.h>
 #include <SpikingNetworks/core/Time.h>
 #include <SpikingNetworks/neuron/Neuron.h>
 
 
 namespace SpikingNetworks::neuron
 {
+	class HodkginHuxleyProperties : public SpikingNetworks::core::ObjectProperties
+	{
+	public:
+		HodkginHuxleyProperties(const std::string& yaml = "") : SpikingNetworks::core::ObjectProperties(yaml)
+		{
+			defineOptionalProperty<double>("capacitance", 1.0, "Membrane capacitance");
+			defineOptionalProperty<double>("threshold", 0.0, "Membrane potential threshold");
+			defineOptionalProperty<bool>("reset_to_equilibrium", true, "Reset membrane potential to equilibrium value");
+			defineOptionalProperty<double>("equilibrium_v", 0.0, "Membrane potential at rest");
+			defineOptionalProperty<double>("equilibrium_k", 0.0, "Equilibrium potential of Potassium ions");
+			defineOptionalProperty<double>("equilibrium_na", 0.0, "Equilibrium potential of Sodium ions");
+			defineOptionalProperty<double>("equilibrium_leak", 0.0, "Equilibrium potential of other ions");
+			defineOptionalProperty<double>("conductance_k", 1.0, "Potassium ionic conductance");
+			defineOptionalProperty<double>("conductance_na", 1.0, "Sodium ionic conductance");
+			defineOptionalProperty<double>("conductance_leak", 1.0, "Ionic conductance of other ions");
+		}
+	};
 
 	class HodgkinHuxley : virtual public Soma
 	{
-	public:
-		HodgkinHuxley()
-			: Soma(),
-			_delta(SpikingNetworks::core::get_time_delta_pointer()),
-			_capacitance(1.0),
-			_threshold(0.0),
-			_reset_to_equilibrium(true),
-			_equilibrium_v(0.0),
-			_equilibrium_k(0.0),
-			_equilibrium_na(0.0),
-			_equilibrium_leak(0.0),
-			_g_k(1.0),
-			_g_na(1.0),
-			_g_leak(1.0),
-			_v(0.0),
-			_h(0.0),
-			_m(0.0),
-			_n(0.0),
-			_alpha_h(0.0),
-			_alpha_m(0.0),
-			_alpha_n(0.0),
-			_beta_h(0.0),
-			_beta_m(0.0),
-			_beta_n(0.0),
-			_v_k(0.0),
-			_v_na(0.0),
-			_v_leak(0.0)
-		{}
+	SN_CLASS_POINTERS(HodgkinHuxley)
+	SN_CLASS_CLONE(HodgkinHuxley)
 
-		HodgkinHuxley(double* delta, double capacitance, double threshold, double equilibrium_v, double equilibrium_k, double equilibrium_na, double equilibrium_leak, double g_k, double g_na, double g_leak, bool reset_to_equilibrium)
-			: Soma(),
-			_delta(delta),
-			_capacitance(capacitance),
-			_threshold(threshold),
-			_reset_to_equilibrium(reset_to_equilibrium),
-			_equilibrium_v(equilibrium_v),
-			_equilibrium_k(equilibrium_k),
-			_equilibrium_na(equilibrium_na),
-			_equilibrium_leak(equilibrium_leak),
-			_g_k(g_k),
-			_g_na(g_na),
-			_g_leak(g_leak),
-			_v(equilibrium_v),
-			_h(0.0),
-			_m(0.0),
-			_n(0.0),
-			_alpha_h(0.0),
-			_alpha_m(0.0),
-			_alpha_n(0.0),
-			_beta_h(0.0),
-			_beta_m(0.0),
-			_beta_n(0.0)
-		{
-			_v_k = _equilibrium_k - _equilibrium_v;
-			_v_na = _equilibrium_na - _equilibrium_v;
-			_v_leak = _equilibrium_leak - _equilibrium_v;
-		}
+	public:
+		HodgkinHuxley(const double* delta = SpikingNetworks::core::get_time_delta_pointer(), HodkginHuxleyProperties properties = HodkginHuxleyProperties());
+
+		void update_properties(HodkginHuxleyProperties properties);
+		HodkginHuxleyProperties extract_properties();
 
 		void integrate(std::vector<SpikingNetworks::core::SpikeEvent> spikes);
 		void fire(double current);
