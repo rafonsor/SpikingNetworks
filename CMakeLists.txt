@@ -32,6 +32,7 @@ SET_PROJECT_VERSION()
 find_package(Boost 1.72 REQUIRED)
 find_package(Eigen3 3.3 REQUIRED)
 find_package(OpenCV 4.2 REQUIRED)
+find_package(yaml-cpp 0.6.3 REQUIRED)
 
 # Include sub-projects.
 add_subdirectory("modules")

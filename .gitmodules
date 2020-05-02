@@ -10,3 +10,7 @@
 	path = dependencies/opencv
 	url = https://github.com/opencv/opencv
 	branch = 4.2.0
+[submodule "yaml-cpp"]
+	path = dependencies/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+	branch = 0.6.3
