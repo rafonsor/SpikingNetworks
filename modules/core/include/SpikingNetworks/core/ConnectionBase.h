@@ -13,12 +13,10 @@ namespace SpikingNetworks::core
 
 	class ConnectionBase :
 		public Id,
-		virtual public PropagateInterface<SpikeEvent>,
-		public std::enable_shared_from_this<ConnectionBase>
+		virtual public PropagateInterface<SpikeEvent>
 	{
-	public:
-		SN_CLASS_POINTERS(ConnectionBase)
+	SN_CLASS_POINTERS(ConnectionBase)
+	SN_CLASS_CLONE_ABSTRACT(ConnectionBase)
 	};
-
 
 }
